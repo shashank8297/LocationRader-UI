@@ -41,6 +41,11 @@ const SignIn = () => {
       });
 
       if (response.ok) {
+        const user = {
+          userId: formData.userId,
+        };
+
+        localStorage.setItem("userId", user.userId);
         navigate("/mapview", { state: { userId: formData.userId } });
       } else {
         alert("Invalid credentials");

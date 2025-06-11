@@ -10,6 +10,11 @@ const MapView = () => {
   const [accessibleUsers, setAccessibleUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [locationInfo, setLocationInfo] = useState(null);
+  const [showPopup, setShowPopup] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [matchedUsers, setMatchedUsers] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
+
   const mapRef = useRef(null);
   const markerRef = useRef(null);
   const stompClientRef = useRef(null);
@@ -20,6 +25,7 @@ const MapView = () => {
       userId: localStorage.getItem("userId"),
       fullName: localStorage.getItem("fullName")
     };
+    console.log("Logged in user:", storedUser);
     setCurrentUser(storedUser);
     initMap();
   }, []);
@@ -29,6 +35,11 @@ const MapView = () => {
       fetch(`http://localhost:9090/userHaveAccessTo?userId=${currentUser.userId}`)
         .then(res => res.json())
         .then(setAccessibleUsers)
+        .catch(console.error);
+
+      fetch('http://localhost:9090/allUsers')
+        .then(res => res.json())
+        .then(setAllUsers)
         .catch(console.error);
 
       const socket = new SockJS("http://localhost:9090/ws");
@@ -95,6 +106,48 @@ const MapView = () => {
     window.location.href = '/';
   };
 
+  const handleSearch = (e) => {
+    const value = e.target.value.toLowerCase();
+    setSearchTerm(value);
+    if (value.trim() === '') {
+      setMatchedUsers([]);
+      return;
+    }
+    const matches = allUsers.filter(
+      (user) =>
+        user.fullName.toLowerCase().includes(value) ||
+        user.userId.toString().includes(value)
+    );
+    setMatchedUsers(matches);
+  };
+
+  const sendRequest = (targetUserId) => {
+    const payload = {
+      currentUserId: currentUser.userId,
+      targetUserId: targetUserId
+    };
+
+    fetch("http://localhost:9090/requestNotification", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    })
+      .then(res => {
+        if (res.ok) {
+          alert("Location request sent successfully!");
+          setShowPopup(false);
+          setSearchTerm('');
+          setMatchedUsers([]);
+        } else {
+          throw new Error("Request failed.");
+        }
+      })
+      .catch(err => {
+        console.error("Request error:", err);
+        alert("Failed to send request.");
+      });
+  };
+
   return (
     <>
       <Navbar user={currentUser} onLogout={handleLogout} />
@@ -113,6 +166,9 @@ const MapView = () => {
               </li>
             ))}
           </ul>
+          <button className="request-btn" onClick={() => setShowPopup(true)}>
+            Request User Location
+          </button>
         </aside>
 
         <main className="main-content">
@@ -124,6 +180,36 @@ const MapView = () => {
           <div id="map" className="map-area"></div>
         </main>
       </div>
+
+      {showPopup && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <button className="close-btn" onClick={() => setShowPopup(false)}>×</button>
+            <h3>Request User Location</h3>
+            <input
+              type="text"
+              placeholder="Enter user name or ID"
+              value={searchTerm}
+              onChange={handleSearch}
+              className="search-input"
+            />
+            <ul className="matched-users">
+              {matchedUsers.map(user => (
+                <li key={user.userId}>
+                  {user.fullName} (ID: {user.userId})
+                  <button
+                    className="send-request-btn"
+                    onClick={() => sendRequest(user.userId)}
+                  >
+                    Request
+                  </button>
+                </li>
+              ))}
+              {matchedUsers.length === 0 && searchTerm && <li>No users found.</li>}
+            </ul>
+          </div>
+        </div>
+      )}
     </>
   );
 };
