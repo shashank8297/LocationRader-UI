@@ -44,7 +44,6 @@ const SignIn = () => {
         const user = {
           userId: formData.userId,
         };
-
         localStorage.setItem("userId", user.userId);
         navigate("/mapview", { state: { userId: formData.userId } });
       } else {

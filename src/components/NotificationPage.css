@@ -1,0 +1,125 @@
+.notification-page {
+  max-width: 900px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: linear-gradient(to right, #f7f9fc, #ffffff);
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  font-family: 'Inter', sans-serif;
+}
+
+.notification-page h2 {
+  font-size: 2.2rem;
+  text-align: center;
+  margin-bottom: 2rem;
+  color: #2c3e50;
+}
+
+.notification-page section {
+  margin-bottom: 2.5rem;
+}
+
+.notification-page h3 {
+  font-size: 1.4rem;
+  margin-bottom: 1rem;
+  color: #34495e;
+  border-bottom: 2px solid #e1e4e8;
+  padding-bottom: 0.5rem;
+  position: relative;
+}
+
+.notif-card {
+  background-color: #fff;
+  padding: 1.2rem 1.5rem;
+  margin-bottom: 1rem;
+  border-left: 6px solid #ccc;
+  border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+}
+
+.notif-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.07);
+}
+
+.notif-card.accepted {
+  border-left-color: #4caf50;
+  background-color: #e8f5e9;
+}
+
+.notif-card.rejected {
+  border-left-color: #e53935;
+  background-color: #fcebea;
+}
+
+.notif-card p {
+  margin: 0;
+  flex: 1;
+  color: #2f2f2f;
+  font-size: 1rem;
+}
+
+.notif-badge {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: white;
+  border-radius: 20px;
+  margin-left: 1rem;
+  text-transform: uppercase;
+}
+
+.notif-badge.accepted {
+  background-color: #43a047;
+}
+
+.notif-badge.rejected {
+  background-color: #e53935;
+}
+
+.notif-badge.pending {
+  background-color: #f39c12;
+}
+
+.notif-card button {
+  background: transparent;
+  border: none;
+  font-weight: bold;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  transition: background 0.3s;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.notif-card button.accept-btn {
+  background-color: #4caf50;
+  color: white;
+  margin-right: 0.5rem;
+}
+
+.notif-card button.reject-btn {
+  background-color: #f44336;
+  color: white;
+}
+
+.notif-card button:hover {
+  opacity: 0.9;
+}
+
+@media (max-width: 600px) {
+  .notif-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .notif-card button {
+    width: 100%;
+    margin: 0.5rem 0 0;
+  }
+}

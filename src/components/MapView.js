@@ -20,16 +20,40 @@ const MapView = () => {
   const stompClientRef = useRef(null);
   const subscriptionRef = useRef(null);
 
+  // Fetch user details only once (initial mount)
   useEffect(() => {
-    const storedUser = {
-      userId: localStorage.getItem("userId"),
-      fullName: localStorage.getItem("fullName")
-    };
-    console.log("Logged in user:", storedUser);
-    setCurrentUser(storedUser);
-    initMap();
+    const userId = localStorage.getItem("userId");
+    if (!userId) {
+      console.error("No userId found in localStorage");
+      return;
+    }
+
+    fetch(`http://localhost:9090/userDetails?userId=${userId}`)
+      .then(res => res.json())
+      .then(data => {
+        const user = {
+          userId: data.userId,
+          fullName: data.fullName,
+          eMailAddress: data.eMailAddress
+        };
+        setCurrentUser(user);
+      })
+      .catch(console.error);
   }, []);
 
+  // Init map only once
+  useEffect(() => {
+    if (!mapRef.current) {
+      const map = L.map('map').setView([20.5937, 78.9629], 5);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 100,
+        attribution: '© OpenStreetMap contributors',
+      }).addTo(map);
+      mapRef.current = map;
+    }
+  }, []);
+
+  // Fetch access list + WebSocket init
   useEffect(() => {
     if (currentUser?.userId) {
       fetch(`http://localhost:9090/userHaveAccessTo?userId=${currentUser.userId}`)
@@ -50,23 +74,12 @@ const MapView = () => {
       });
       client.activate();
       stompClientRef.current = client;
-    }
 
-    return () => {
-      stompClientRef.current?.deactivate();
-    };
+      return () => {
+        stompClientRef.current?.deactivate();
+      };
+    }
   }, [currentUser]);
-
-  const initMap = () => {
-    if (!mapRef.current) {
-      const map = L.map('map').setView([20.5937, 78.9629], 5);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 100,
-        attribution: '© OpenStreetMap contributors',
-      }).addTo(map);
-      mapRef.current = map;
-    }
-  };
 
   const handleUserClick = (userId) => {
     setSelectedUser(userId);
@@ -127,7 +140,7 @@ const MapView = () => {
       targetUserId: targetUserId
     };
 
-    fetch("http://localhost:9090/requestNotification", {
+    fetch("http://localhost:9090/newNotification", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
@@ -151,7 +164,6 @@ const MapView = () => {
   return (
     <>
       <Navbar user={currentUser} onLogout={handleLogout} />
-
       <div className="mapview-container">
         <aside className="sidebar">
           <h2>Accessible Users</h2>
@@ -195,8 +207,15 @@ const MapView = () => {
             />
             <ul className="matched-users">
               {matchedUsers.map(user => (
-                <li key={user.userId}>
-                  {user.fullName} (ID: {user.userId})
+                <li key={user.userId} className="matched-user-card">
+                  <div className="user-info">
+                    <div className="user-name">{user.fullName}</div>
+                    <div className="user-meta">
+                      ID: {user.userId}<br />
+                      {user.eMailAddress && <>Email: {user.eMailAddress}<br /></>}
+                      {user.mobileNumber && <>Phone: {user.mobileNumber}</>}
+                    </div>
+                  </div>
                   <button
                     className="send-request-btn"
                     onClick={() => sendRequest(user.userId)}
@@ -205,7 +224,9 @@ const MapView = () => {
                   </button>
                 </li>
               ))}
-              {matchedUsers.length === 0 && searchTerm && <li>No users found.</li>}
+              {matchedUsers.length === 0 && searchTerm && (
+                <li className="no-match">No users found.</li>
+              )}
             </ul>
           </div>
         </div>
