@@ -22,7 +22,7 @@ const MapView = () => {
 
   // Fetch user details only once (initial mount)
   useEffect(() => {
-    const userId = localStorage.getItem("userId");
+    const userId = sessionStorage.getItem("userId");
     if (!userId) {
       console.error("No userId found in localStorage");
       return;

@@ -8,33 +8,31 @@ const NotificationPage = () => {
     REJECTED: []
   });
 
-  const userId = localStorage.getItem('userId');
+  const userId = sessionStorage.getItem('userId');
+
+  const statusMap = {
+    accept: 'ACCEPTED',
+    reject: 'REJECTED'
+  };
+
+  // Fetch all notifications at once
+  const fetchNotifications = async () => {
+    try {
+      const res = await fetch(`http://localhost:9090/getAllNotifications?userId=${userId}`);
+      if (!res.ok) throw new Error('Failed to fetch notifications');
+
+      const data = await res.json(); // should return { PENDING: [], ACCEPTED: [], REJECTED: [] }
+      setNotifications({
+        PENDING: data.PENDING || [],
+        ACCEPTED: data.ACCEPTED || [],
+        REJECTED: data.REJECTED || []
+      });
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
+  };
 
   useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        const [pendingRes, acceptedRes, rejectedRes] = await Promise.all([
-          fetch(`http://localhost:9090/getPendingNotifications?userId=${userId}`),
-          fetch(`http://localhost:9090/acceptRequestHistory?currentUserId=${userId}`),
-          fetch(`http://localhost:9090/rejectRequestHistory?currentUserId=${userId}`)
-        ]);
-
-        const [pending, accepted, rejected] = await Promise.all([
-          pendingRes.json(),
-          acceptedRes.json(),
-          rejectedRes.json()
-        ]);
-
-        setNotifications({
-          PENDING: pending,
-          ACCEPTED: accepted,
-          REJECTED: rejected
-        });
-      } catch (error) {
-        console.error('Failed to fetch notifications:', error);
-      }
-    };
-
     if (userId) {
       fetchNotifications();
     }
@@ -49,17 +47,17 @@ const NotificationPage = () => {
       });
 
       if (res.ok) {
-        // Move from PENDING to ACCEPTED or REJECTED
         setNotifications(prev => {
           const updatedPending = prev.PENDING.filter(n => n.requestId !== requestId);
           const updatedItem = prev.PENDING.find(n => n.requestId === requestId);
           if (!updatedItem) return prev;
 
-          updatedItem.status = action.toUpperCase();
+          const clonedItem = { ...updatedItem, status: statusMap[action] };
+
           return {
             ...prev,
             PENDING: updatedPending,
-            [action.toUpperCase()]: [...prev[action.toUpperCase()], updatedItem]
+            [statusMap[action]]: [...prev[statusMap[action]], clonedItem]
           };
         });
       }
@@ -84,16 +82,24 @@ const NotificationPage = () => {
                 <span className="notif-badge pending">Pending</span>
               </p>
               <div>
-                <button className="accept-btn" onClick={() => handleAction(n.requestId, 'accept')}>
+                <button
+                  className="accept-btn"
+                  onClick={() => handleAction(n.requestId, 'accept')}
+                >
                   Accept
                 </button>
-                <button className="reject-btn" onClick={() => handleAction(n.requestId, 'reject')}>
+                <button
+                  className="reject-btn"
+                  onClick={() => handleAction(n.requestId, 'reject')}
+                >
                   Reject
                 </button>
               </div>
             </div>
           ))
-        ) : <p>No pending requests.</p>}
+        ) : (
+          <p>No pending requests.</p>
+        )}
       </section>
 
       <section>
@@ -102,12 +108,14 @@ const NotificationPage = () => {
           ACCEPTED.map(n => (
             <div key={n.requestId} className="notif-card accepted">
               <p>
-                Accepted request from user {n.targetUserId}
+                Accepted request from user {n.currentUserId}
                 <span className="notif-badge accepted">Accepted</span>
               </p>
             </div>
           ))
-        ) : <p>No accepted requests.</p>}
+        ) : (
+          <p>No accepted requests.</p>
+        )}
       </section>
 
       <section>
@@ -116,12 +124,14 @@ const NotificationPage = () => {
           REJECTED.map(n => (
             <div key={n.requestId} className="notif-card rejected">
               <p>
-                Rejected request from user {n.targetUserId}
+                Rejected request from user {n.currentUserId}
                 <span className="notif-badge rejected">Rejected</span>
               </p>
             </div>
           ))
-        ) : <p>No rejected requests.</p>}
+        ) : (
+          <p>No rejected requests.</p>
+        )}
       </section>
     </div>
   );
